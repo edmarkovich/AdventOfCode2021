@@ -1,4 +1,6 @@
 import sys
+from functools import reduce
+import operator
 
 file1 = open('day16.txt', 'r')
 Lines = file1.readlines()
@@ -12,39 +14,49 @@ def parseLiteral(stream):
         out += stream[(i*5)+1:(i*5)+5]
         if stream[i*5]=="0":break
     lit = int(out,2)
-    #return (stream[(i*5)+5:], lit)
-    return (stream[(i*5)+5:], 0) #no version for literars
+    return (stream[(i*5)+5:], lit)
 
-def parseOperator(stream):
+def parseOperator(op, stream):
     typ = stream[0]
     stream = stream[1:]
-    outVer = 0
+    subPackets = []
     if typ == "0":
         target = int(stream[0:15],2)
         stream = stream[15:]
         target = len(stream) - target
         while len(stream) > target:
             (stream, out) = parsePacket(stream)
-            outVer += out
+            subPackets.append(out)
     else:
         target = int(stream[0:11],2)
         stream = stream[11:]
         for i in range(0, target):
             (stream, out) = parsePacket(stream)
-            outVer += out
-    return (stream, outVer)
+            subPackets.append(out)
+
+    out = None
+    if   op == 0: out = sum(subPackets)
+    elif op == 1: out = reduce(operator.mul, subPackets,1)
+    elif op == 2: out = min(subPackets)
+    elif op == 3: out = max(subPackets)
+    elif op == 5: out = 1 if subPackets[0]>subPackets[1] else 0
+    elif op == 6: out = 1 if subPackets[0]<subPackets[1] else 0
+    elif op == 7: out = 1 if subPackets[0]==subPackets[1] else 0
+    
+    
+    return (stream, out)
 
 def parsePacket(stream):
     ver = int(stream[:3],2)
     stream = stream[3:]
 
-    typ = int(stream[:3],2)
+    operator = int(stream[:3],2)
     stream = stream[3:]
 
 
-    (stream, out) = parseLiteral(stream) if typ == 4 else parseOperator(stream)
+    (stream, out) = parseLiteral(stream) if operator == 4 else parseOperator(operator, stream)
 
-    return (stream, ver+out)
+    return (stream, out)
 
 
 
