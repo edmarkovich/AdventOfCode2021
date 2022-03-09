@@ -49,6 +49,23 @@ def split(number):
             return number[:i]+"["+a+","+b+"]"+number[i+1:]
     return None
 
+def add(a,b):
+    num = "["+a+","+b+"]"
+    while True:
+        changed = False
+        while True:
+            x = explode(num)
+            if x == None: break
+            changed = True
+            num = x
+        
+        
+        x = split(num)
+        if x == None:
+            if not changed: return num
+        else:
+            num =x
+
                     
 def test():
     assert explode("[[[[[9,8],1],2],3],4]") == "[[[[0,9],2],3],4]"
@@ -62,4 +79,6 @@ def test():
     assert split("[[[[0,7],4],[F,[0,D]]],[1,1]]") == "[[[[0,7],4],[[7,8],[0,D]]],[1,1]]"
     assert split("[[[[0,7],4],[[7,8],[0,D]]],[1,1]]") == "[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]"
     assert explode("[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]") == "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
+
+    assert add("[[[[4,3],4],4],[7,[[8,4],9]]]","[1,1]") == "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
 test()
