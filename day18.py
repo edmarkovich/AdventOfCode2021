@@ -1,4 +1,5 @@
 import json
+import math
 import sys
 file1 = open('day18.txt', 'r')
 Lines = file1.readlines()
@@ -37,6 +38,16 @@ def explode(number):
                             break
 
                     return(out)
+    return None
+
+def split(number):
+    for i in range (0, len(number)):
+        if number[i].isalpha():
+            n = 10 + ord(number[i])-ord("A")
+            a = str(math.floor(n/2))
+            b = str(math.ceil(n/2))
+            return number[:i]+"["+a+","+b+"]"+number[i+1:]
+    return None
 
                     
 def test():
@@ -45,5 +56,10 @@ def test():
     assert explode("[[6,[5,[4,[3,2]]]],1]") == "[[6,[5,[7,0]]],3]"
     assert explode("[[3,[2,[1,[7,3]]]],[6,[5,[4,[3,2]]]]]") == "[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]"
     assert explode("[[3,[2,[8,0]]],[9,[5,[4,[3,2]]]]]") == "[[3,[2,[8,0]]],[9,[5,[7,0]]]]"
-test()
 
+    assert explode("[[[[[4,3],4],4],[7,[[8,4],9]]],[1,1]]") == "[[[[0,7],4],[7,[[8,4],9]]],[1,1]]"
+    assert explode("[[[[0,7],4],[7,[[8,4],9]]],[1,1]]") == "[[[[0,7],4],[F,[0,D]]],[1,1]]"
+    assert split("[[[[0,7],4],[F,[0,D]]],[1,1]]") == "[[[[0,7],4],[[7,8],[0,D]]],[1,1]]"
+    assert split("[[[[0,7],4],[[7,8],[0,D]]],[1,1]]") == "[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]"
+    assert explode("[[[[0,7],4],[[7,8],[0,[6,7]]]],[1,1]]") == "[[[[0,7],4],[[7,8],[6,0]]],[8,1]]"
+test()
