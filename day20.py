@@ -12,23 +12,31 @@ class Beacon:
         b = list(b)
         self.coords = b
     
-    def get_dist(self, beacon):
+    def dist(self, beacon):
         a = (self.coords[0] - beacon.coords[0]) ** 2
         b = (self.coords[1] - beacon.coords[1]) ** 2
         c = (self.coords[2] - beacon.coords[2]) ** 2
-        return (a+b+c) ** 0.5
+        r = (a+b+c) ** 0.5
+        r = int(r)
+        return(r)
 
 class Scanner:
     def __init__(self):
-        self.beacons = set()
+        self.beacons = [] #set()
+        self.distances = {}
 
     def add(self, beacon_line):
         b = Beacon(beacon_line)
-        self.beacons.add(b)
-
+        self.beacons.append(b)
+        
 
     def done(self):
-        pass      
+        l = len(self.beacons)
+        for i in range(0, l-1):
+            for j in range(i+1, l):
+                self.distances[(i,j)] = self.beacons[i].dist(self.beacons[j])
+        print(self.distances)
+
 
 
     
