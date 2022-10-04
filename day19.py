@@ -1,179 +1,165 @@
-import math
+from cmath import sqrt
 import itertools
-import sys
-import cProfile
+import math
 
-file1 = open('day19.txt', 'r')
+file1 = open('day20.txt', 'r')
 Lines = file1.readlines()
 
-class Scanner:
-    def __init__(self, beacons):
-        self.beacons     = beacons
-        self.distances   = None
-        self.computeDistances()
-        self.relocated   = False
-
-    def distance(self, a, b):        
-        x = (a[0]-b[0]) ** 2
-        y = (a[1]-b[1]) ** 2
-        z = (a[2]-b[2]) ** 2
-        return int(math.sqrt(x+y+z)) #TODO: may need more precision
-
-    def computeDistances(self):
-        if self.distances != None: return self.distances
-
-        self.distances = {}
-
-        for i in range(0, len(self.beacons)):
-            if i not in self.distances.keys(): self.distances[i]={}            
-
-            for j in range (i+1, len(self.beacons)):
-                if j not in self.distances.keys(): self.distances[j]={}
-
-                self.distances[i][j] = self.distance(self.beacons[i], self.beacons[j])
-                self.distances[j][i] = self.distances[i][j]
-        
-        return self.distances
-
-    def getOverlaps(self, otherSensor):
-        x = self.computeDistances()   
-        out =[]     
-        for beacon in x.keys():
-            dists = x[beacon].values()
-            matchedBeacon = otherSensor.findOverlapByDistances(dists)  
-            if matchedBeacon != None:
-                out.append((self.beacons[beacon], matchedBeacon))                
-
-        return out
-            
-    def findOverlapByDistances(self, otherDistances):
-        myDs = self.computeDistances()
-        for myB in myDs.keys():
-            overlap = set(myDs[myB].values()).intersection(set(otherDistances))
-            if len(overlap) >= 11:
-                return self.beacons[myB]
-        return None
-
-
-
-
-def loadScanners(Lines):
-    scanners = []
-    beacons = []
-    for l in Lines:
-        l = l.strip()
-
-        if l.startswith("---"):
-            beacons = []
-            continue
-
-        if l == "":
-            if len(beacons) == 0: break
-            s = Scanner(beacons)
-            scanners.append(s)
-            beacons=[]
-            continue
-
-        b = l.split(",")
-        b = list(map(lambda x: int(x), b))
-        beacons.append(b)
+class Beacon:
+    def __init__(self, coords):
+        self.coords = coords
     
-    return scanners
+    def dist_vector(self, beacon):
+        out = ( beacon.coords[0] - self.coords[0], 
+                 beacon.coords[1] - self.coords[1],
+                 beacon.coords[2] - self.coords[2])
+        return out
 
-def getDistVect(a,b):
-    return( a[0]-b[0], a[1]-b[1], a[2]-b[2] )
+    def clone_rotated(self,rot):
+        axis = rot[0]
+        sign = rot[1]
+        out = ( self.coords[axis[0]] * sign[0], 
+                 self.coords[axis[1]] * sign[1],
+                 self.coords[axis[2]] * sign[2])
+        return Beacon(out)
 
-def getTranslator(colSeq, colSign):
-    funcA = None
-    if colSeq == 1: funcA = lambda x : (x[0], x[1], x[2])
-    if colSeq == 2: funcA = lambda x : (x[0], x[2], x[1])
-    if colSeq == 3: funcA = lambda x : (x[1], x[0], x[2])
-    if colSeq == 4: funcA = lambda x : (x[1], x[2], x[0])
-    if colSeq == 5: funcA = lambda x : (x[2], x[0], x[1])
-    if colSeq == 6: funcA = lambda x : (x[2], x[1], x[0])
+    def move(self, offset):
+        x = (
+            self.coords[0] - offset[0],
+            self.coords[1] - offset[1],
+            self.coords[2] - offset[2])
+        self.coords = x
+        return self
 
-    if colSign == 1: funcB = lambda x : (x[0], x[1], x[2])
-    if colSign == 2: funcB = lambda x : (-x[0], x[1], x[2])
-    if colSign == 3: funcB = lambda x : (x[0], -x[1], x[2])
-    if colSign == 4: funcB = lambda x : (x[0], x[1], -x[2])
-    if colSign == 5: funcB = lambda x : (-x[0], -x[1], x[2])
-    if colSign == 6: funcB = lambda x : (x[0], -x[1], -x[2])    
-    if colSign == 7: funcB = lambda x : (-x[0], -x[1], -x[2]) 
+class Scanner:
+    def __init__(self):
+        self.beacons = [] #set()
 
-    g = lambda x: funcB(funcA(x))
-    return g
+    def add(self, beacon_line):
+        b = beacon_line.split(",")
+        b = map(lambda x: int(x), b)
+        b = list(b)
 
-def findFindAxisFunction(overlappedBeacons):
-    for a in range(1,6):
-        for b in range (1, 8):
-            axisFunction = getTranslator(a,b)
+        b = Beacon(b)
+        self.beacons.append(b)
+    
+    def done(self):
+        pass
 
-            test = list(map(lambda x: (x[0], axisFunction(x[1])), overlappedBeacons))
-            test = list(filter(lambda x: getDistVect(x[0], x[1]), test))
-            print("    :", test)
-            if len(test) == len(overlappedBeacons):
-                return axisFunction
-    print("No Axis rotator?!")
+    def get_rotated_beacons(self, rotation):
+        return list(map(lambda x: x.clone_rotated(rotation), self.beacons))
 
-
-def findMoveVector(overlappedBeacons):
-
-    for i in range(0, len(overlappedBeacons)-1):
-        x1 = getDistVect(overlappedBeacons[i][0], overlappedBeacons[i+1][0])
-        x2 = getDistVect(overlappedBeacons[i][1], overlappedBeacons[i+1][1])
-        if x1 == x2 : 
-            offset = getDistVect(overlappedBeacons[i][1], overlappedBeacons[i][0])
-            print("OOOOOH",overlappedBeacons[i][0], overlappedBeacons[i][1], offset)
-            return offset
-        print("WTF?!",x1,x2)
-    print("ERROR?!")
+    def clone_rotated(self,rotation):
+        out = Scanner()
+        out.beacons = self.get_rotated_beacons(rotation)
+        return out
 
 
-def getScanPairsForMatching(scans):
-    relocated = []
-    todo      = []
+    def get_distance_vectors_for_beacon(self, beacon_id):
+        out = []
+        b1 = self.beacons[beacon_id]
+        l = len(self.beacons)
+        for i in range(0, l):
+            if i == beacon_id: continue                    
+            b2 = self.beacons[i]
+            out.append(b1.dist_vector(b2))
+        return out                            
 
-    for s in scans:
-        if s.relocated:  relocated.append(s)
-        else:            todo.append(s)
+    def normalize(self, rotation, offset):
+        x = self.get_rotated_beacons(rotation)
+        x = list(map(lambda a: a.move(offset), x))
+        self.beacons = x        
 
-    if todo == []: return None
+def getAllRotations():
+    if getAllRotations.cache == None:
+        getAllRotations.cache=[]
+        axis  = list(itertools.permutations([0,1,2]))
+        signs = list(itertools.product([-1, 1], repeat=3))
 
-    out = []
-    for r in relocated:
-        for t in todo:
-            out.append( (r,t) )
+        for a in axis:
+            for s in signs:
+                getAllRotations.cache.append((a,s))
+    return getAllRotations.cache
+getAllRotations.cache = None
 
-    return out
+def two_scanners_overlap(s1, s2_in):
+    for r in getAllRotations():                    
+        s2 = s2_in.clone_rotated(r)
+        for x in range(0,len(s1.beacons)):
+            s1_distances = s1.get_distance_vectors_for_beacon(x)
+            s1_distances = set(s1_distances)
+            for y in range(0, len(s2.beacons)):
+                s2_distances = s2.get_distance_vectors_for_beacon(y)
+                s2_distances = set(s2_distances)
+                inter = s1_distances.intersection(s2_distances)
+                if len(inter)>=11:
+                    offset = s1.beacons[x].dist_vector(s2.beacons[y])
+                    return (r, offset)
+    return None
 
-
-scans = loadScanners(Lines)
-scans[0].relocated = True
-
-while True:
-    pairs = getScanPairsForMatching(scans)
-    if pairs == None: break
-
-    for p in pairs:
-        overlaps = p[0].getOverlaps(p[1])
-        if overlaps == []: 
-            continue
-
-        print(overlaps[0])
-
-        p[1].relocated = True
-        axisFunction = findFindAxisFunction(overlaps)
-
-        overlapWithRotation = list(map(lambda x: (x[0], axisFunction(x[1])), overlaps))
-        print(overlapWithRotation[0])
-
-        sys.exit()
-
-        findMoveVector(overlapWithRotation)
-        
-
-
+offsets=[(0,0,0)]
+def translate_if_overlap(scanners, i, j):
+    out = two_scanners_overlap(scanners[i], scanners[j])
+    if out:
+        rotation = out[0]
+        offset   = out[1]
+        print("Overlap between ",i,j, rotation, offset)
+        offsets.append(offset)
+        scanners[j].normalize(rotation, offset)
+        return True
+    return None
 
 
+def find_overlapped_scanners(scanners):
+        normalized = [0]
+        processed  = []
+        l = len(scanners)
+        while True:
+            change = False
+            to_add=[]
+            for i in normalized:                
+                for j in range(0, l):
+                    if i==j or (i,j) in processed or (j,i) in processed:
+                        continue 
+                    processed.append((i,j))
+                    if translate_if_overlap(scanners,i,j):
+                        to_add.append(j)   
+                        change = True             
+            if not change: 
+                return normalized
+            normalized += to_add
 
-        
+scanners = []
+scanner = None
+for l in Lines:
+    if l.startswith("---"):
+        if scanner is not None:
+            scanner.done()
+        scanner = Scanner()
+        scanners.append(scanner)
+        continue
+    if len(l.strip()) == 0:
+        continue
+    else:
+        scanner.add(l.strip())
+scanner.done()
+overlapped_ones = find_overlapped_scanners(scanners)
+
+
+final = set()
+for i in overlapped_ones:
+    s = scanners[i]
+    c = list(map( lambda x: (x.coords[0], x.coords[1], x.coords[2]), s.beacons))
+    c = set(c)
+    final.update(c)
+print(len(final))
+
+max_dist=0
+l = len(offsets)
+for i in range(0, l-1):
+    for j in range (i, l):
+        q = abs(offsets[i][0]-offsets[j][0])
+        q += abs(offsets[i][1]-offsets[j][1])
+        q += abs(offsets[i][2]-offsets[j][2])
+        max_dist = max(max_dist,q)
+print (max_dist)
