@@ -97,13 +97,14 @@ def two_scanners_overlap(s1, s2_in):
                     return (r, offset)
     return None
 
-
+offsets=[(0,0,0)]
 def translate_if_overlap(scanners, i, j):
     out = two_scanners_overlap(scanners[i], scanners[j])
     if out:
         rotation = out[0]
         offset   = out[1]
         print("Overlap between ",i,j, rotation, offset)
+        offsets.append(offset)
         scanners[j].normalize(rotation, offset)
         return True
     return None
@@ -152,3 +153,13 @@ for i in overlapped_ones:
     c = set(c)
     final.update(c)
 print(len(final))
+
+max_dist=0
+l = len(offsets)
+for i in range(0, l-1):
+    for j in range (i, l):
+        q = abs(offsets[i][0]-offsets[j][0])
+        q += abs(offsets[i][1]-offsets[j][1])
+        q += abs(offsets[i][2]-offsets[j][2])
+        max_dist = max(max_dist,q)
+print (max_dist)
