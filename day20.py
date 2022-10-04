@@ -10,9 +10,9 @@ class Beacon:
         self.coords = coords
     
     def dist_vector(self, beacon):
-        out = ( self.coords[0] - beacon.coords[0], 
-                 self.coords[1] - beacon.coords[1],
-                 self.coords[2] - beacon.coords[2])
+        out = ( beacon.coords[0] - self.coords[0], 
+                 beacon.coords[1] - self.coords[1],
+                 beacon.coords[2] - self.coords[2])
         return out
 
     def clone_rotated(self,rot):
@@ -22,6 +22,14 @@ class Beacon:
                  self.coords[axis[1]] * sign[1],
                  self.coords[axis[2]] * sign[2])
         return Beacon(out)
+
+    def move(self, offset):
+        x = (
+            self.coords[0] - offset[0],
+            self.coords[1] - offset[1],
+            self.coords[2] - offset[2])
+        self.coords = x
+        return self
 
 class Scanner:
     def __init__(self):
@@ -57,31 +65,10 @@ class Scanner:
             out.append(b1.dist_vector(b2))
         return out                            
 
-
-def two_scanners_overlap(s1, s2_in):
-                for r in getAllRotations():                    
-                    s2 = s2_in.clone_rotated(r)
-                    for x in range(0,len(s1.beacons)):
-                        s1_distances = s1.get_distance_vectors_for_beacon(x)
-                        s1_distances = set(s1_distances)
-                        for y in range(0, len(s2.beacons)):
-                            s2_distances = s2.get_distance_vectors_for_beacon(y)
-                            s2_distances = set(s2_distances)
-                            inter = s1_distances.intersection(s2_distances)
-                            if len(inter)>=11:
-                                return True
-
-def find_overlaps(scanners):
-        l = len(scanners)
-        for i in range(0, l-1):
-            for j in range(i+1, l): 
-                if two_scanners_overlap(scanners[i], scanners[j]):
-                    print("Overlap between ",i,j)
-
-                            
-                
-
-
+    def normalize(self, rotation, offset):
+        x = self.get_rotated_beacons(rotation)
+        x = list(map(lambda a: a.move(offset), x))
+        self.beacons = x        
 
 def getAllRotations():
     if getAllRotations.cache == None:
@@ -94,6 +81,49 @@ def getAllRotations():
                 getAllRotations.cache.append((a,s))
     return getAllRotations.cache
 getAllRotations.cache = None
+
+def two_scanners_overlap(s1, s2_in):
+    for r in getAllRotations():                    
+        s2 = s2_in.clone_rotated(r)
+        for x in range(0,len(s1.beacons)):
+            s1_distances = s1.get_distance_vectors_for_beacon(x)
+            s1_distances = set(s1_distances)
+            for y in range(0, len(s2.beacons)):
+                s2_distances = s2.get_distance_vectors_for_beacon(y)
+                s2_distances = set(s2_distances)
+                inter = s1_distances.intersection(s2_distances)
+                if len(inter)>=11:
+                    offset = s1.beacons[x].dist_vector(s2.beacons[y])
+                    return (r, offset)
+    return None
+
+
+def translate_if_overlap(scanners, i, j):
+    out = two_scanners_overlap(scanners[i], scanners[j])
+    if out:
+        rotation = out[0]
+        offset   = out[1]
+        print("Overlap between ",i,j, rotation, offset)
+        print(scanners[j].beacons[0].coords)
+        scanners[j].normalize(rotation, offset)
+        print(scanners[j].beacons[0].coords)
+        return True
+    return None
+
+def find_overlaps(scanners):
+        l = len(scanners)
+        for i in range(0, l-1):
+            for j in range(i+1, l): 
+                x = translate_if_overlap(scanners,i,j)
+
+
+
+                            
+                
+
+
+
+
 
 scanners = []
 scanner = None
@@ -109,5 +139,4 @@ for l in Lines:
     else:
         scanner.add(l.strip())
 scanner.done()
-
 find_overlaps(scanners)
