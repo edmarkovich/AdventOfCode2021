@@ -2,7 +2,7 @@ from cmath import sqrt
 import itertools
 import math
 
-file1 = open('day20_test.txt', 'r')
+file1 = open('day20.txt', 'r')
 Lines = file1.readlines()
 
 class Beacon:
@@ -104,26 +104,29 @@ def translate_if_overlap(scanners, i, j):
         rotation = out[0]
         offset   = out[1]
         print("Overlap between ",i,j, rotation, offset)
-        print(scanners[j].beacons[0].coords)
         scanners[j].normalize(rotation, offset)
-        print(scanners[j].beacons[0].coords)
         return True
     return None
 
-def find_overlaps(scanners):
+
+def find_overlapped_scanners(scanners):
+        normalized = [0]
+        processed  = []
         l = len(scanners)
-        for i in range(0, l-1):
-            for j in range(i+1, l): 
-                x = translate_if_overlap(scanners,i,j)
-
-
-
-                            
-                
-
-
-
-
+        while True:
+            change = False
+            to_add=[]
+            for i in normalized:                
+                for j in range(0, l):
+                    if i==j or (i,j) in processed or (j,i) in processed:
+                        continue 
+                    processed.append((i,j))
+                    if translate_if_overlap(scanners,i,j):
+                        to_add.append(j)   
+                        change = True             
+            if not change: 
+                return normalized
+            normalized += to_add
 
 scanners = []
 scanner = None
@@ -139,4 +142,13 @@ for l in Lines:
     else:
         scanner.add(l.strip())
 scanner.done()
-find_overlaps(scanners)
+overlapped_ones = find_overlapped_scanners(scanners)
+
+
+final = set()
+for i in overlapped_ones:
+    s = scanners[i]
+    c = list(map( lambda x: (x.coords[0], x.coords[1], x.coords[2]), s.beacons))
+    c = set(c)
+    final.update(c)
+print(len(final))
