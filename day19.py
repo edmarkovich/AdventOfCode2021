@@ -2,7 +2,7 @@ from cmath import sqrt
 import itertools
 import math
 
-file1 = open('day20.txt', 'r')
+file1 = open('day19.txt', 'r')
 Lines = file1.readlines()
 
 class Beacon:
