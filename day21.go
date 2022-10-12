@@ -18,7 +18,6 @@ func next_die() int {
 
 func next_3() int {
 	var x = next_die() + next_die() + next_die()
-	//fmt.Println(x)
 	return x
 }
 
@@ -31,6 +30,10 @@ func next_place(start int) int {
 }
 
 func main() {
+
+	main2()
+	return
+
 	pos1 = 4
 	pos2 = 8
 
