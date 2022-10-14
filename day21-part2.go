@@ -73,7 +73,7 @@ func checkState(s State) WinCount {
 
 }
 
-func main() {
+func mainX() {
 
 	fmt.Println("Hello")
 	m = make(map[State]WinCount)

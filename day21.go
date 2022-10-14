@@ -29,9 +29,9 @@ func next_place(start int) int {
 	return x
 }
 
-func main() {
+func mainY() {
 
-	main2()
+	//main2()
 	return
 
 	pos1 = 4
